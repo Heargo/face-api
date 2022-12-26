@@ -50,4 +50,3 @@ def updateSession():
         import_session(args.cookiefile or get_cookiefile(), args.sessionfile)
     except (ConnectionException, OperationalError) as e:
         raise SystemExit("Cookie import failed: {}".format(e))
-

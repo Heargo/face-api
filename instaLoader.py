@@ -2,11 +2,15 @@ import instaloader
 from datetime import datetime
 from itertools import dropwhile, takewhile
 import csv
-from fixLogin import updateSession
 
 class GetInstagramProfile():
     def __init__(self) -> None:
         self.L = instaloader.Instaloader()
+        self.currentAccount = ""
+
+    def loginFromSession(self,sessionName):
+        self.L.load_session_from_file(sessionName)
+        self.currentAccount = sessionName
 
     def download_users_profile_picture(self,username):
         self.L.download_profile(username, profile_pic_only=True)
@@ -33,15 +37,16 @@ class GetInstagramProfile():
         for followee in profile.get_followers():
             print("fol:",followee.username)
 
-    def get_users_followings(self,user_name):
+    def get_users_followings(self,user_name,outputfile):
         '''Note: login required to get a profile's followings.'''
-        self.L.login(input("input your username: "), input("input your password: ") ) 
+        #self.L.login(input("input your username: "), input("input your password: ") ) 
         profile = instaloader.Profile.from_username(self.L.context, user_name)
-        file = open("following_names.txt","a+")
+        file = open(outputfile,"w")
         for followee in profile.get_followees():
             username = followee.username
             file.write(username + "\n")
             print(username)
+        file.close()
 
     def get_post_comments(self,username):
         posts = instaloader.Profile.from_username(self.L.context, username).get_posts()
@@ -76,7 +81,7 @@ class GetInstagramProfile():
 
     def download_post_since_date(self,username,date):
         posts = instaloader.Profile.from_username(self.L.context, username).get_posts()
-        SINCE = datetime(date[0], date[1], date[2])
+        SINCE = datetime(int(date[0]), int(date[1]), int(date[2]))
         #until now
         UNTIL = datetime.now()
 
