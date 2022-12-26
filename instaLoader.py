@@ -42,7 +42,7 @@ class GetInstagramProfile():
         #self.L.login(input("input your username: "), input("input your password: ") ) 
         profile = instaloader.Profile.from_username(self.L.context, user_name)
         file = open(outputfile,"w")
-        for followee in profile.get_followees():
+        for followee in profile.get_followers():
             username = followee.username
             file.write(username + "\n")
             print(username)

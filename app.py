@@ -41,7 +41,6 @@ def getDateFromUser(user,flaggedUsers):
     return ""
 
 def updateWatchlist(cls):
-
     #load watchlist in a list
     flaggedUsers = loadUsers(cls,"watchlist.txt")
 
@@ -129,17 +128,19 @@ def displayMenu():
     print("3. Search and analyze")
     print("4. Exit")
 
+def login(cls):
+    account = updateSession() #input("Enter your account name: ")
+    cls.loginFromSession(account)
 
 
 cls = GetInstagramProfile()
 exitApp = False
+login(cls)
 while (not exitApp):
     displayMenu()
     choice = input("Enter your choice: ")
     if choice == "1":
-        updateSession()
-        account = input("Enter your account name: ")
-        cls.loginFromSession(account)
+        login(cls)
     elif choice == "2":
         updateWatchlist(cls)
     elif choice == "3":
