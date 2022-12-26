@@ -2,22 +2,13 @@ from faceDetector import checkImage
 from instaLoader import GetInstagramProfile
 from fixLogin import updateSession
 import os
-from datetime import date
+from datetime import date as dt
 
-myface ="me.jpg"
+#get date in format yyyy,mm,dd
+def getTodayDate():
+    today = dt.today()
+    return str(today.year)+","+str(today.month)+","+str(today.day)
 
-# #for each picture in the folder downloads check if there is my face in it
-# listOfFiles = []
-# for filename in os.listdir("downloads"):
-#     if filename.endswith(".jpg") or filename.endswith(".png"):
-#         if checkImage("downloads/"+filename,myface):
-#             print("found my face in "+filename)
-#             listOfFiles.append("downloads/"+filename)
-#     else:
-#         continue
-
-# print("found in total "+str(len(listOfFiles))+" pictures with my face in it")
-# print(listOfFiles)
 def cleanConsole():
     #os.system('cls' if os.name=='nt' else 'clear')
     print("\n"*5)
@@ -28,11 +19,12 @@ def loadUsers(cls,fileName):
     flaggedUsers = [x.strip() for x in content]
     return flaggedUsers
 
-def newUser(user,flaggedUsers):
-    for u in flaggedUsers:
-        if user.split("   ")[0] ==user:
-            return False
-    return True
+def newUser(user,users):
+    similarUsers =0
+    for u in users:
+        if u.split("   ")[0] ==user:
+            similarUsers+=1
+    return similarUsers==0
 
 def getDateFromUser(user,flaggedUsers):
     for u in flaggedUsers:
@@ -42,26 +34,28 @@ def getDateFromUser(user,flaggedUsers):
 
 def updateWatchlist(cls):
     #load watchlist in a list
+    print("Loading watchlist...")
     flaggedUsers = loadUsers(cls,"watchlist.txt")
+    print("total users in watchlist: "+str(len(flaggedUsers)))
 
-    print("Updating watchlist from instagram...")
+    print("fetching updated followers from instagram...")
     cls.get_users_followings(cls.currentAccount,"watchlist.txt")
-
     newFlaggedUsers = loadUsers(cls,"watchlist.txt")
-
 
     #for each flag user, if there is no date (split by "   ") add current date
     date ="" 
     with open("watchlist.txt", "w") as f:
         for user in newFlaggedUsers:
-            print("user:"+user)
+            #print("user:"+user)
             if newUser(user,flaggedUsers):
+                print("found new user: "+user)
                 if(date==""):
                         date = input("We found new users, please enter a date (yyyy,mm,dd) to start checking from: ")
                 toWrite = user+"   "+str(date)+"\n"
-                print("writing: "+toWrite)
+                #print("writing: "+toWrite)
                 f.write(toWrite)
             else:
+                #print("existing user: "+user)
                 f.write(user+"   "+getDateFromUser(user,flaggedUsers)+"\n")
             
 
@@ -72,55 +66,70 @@ def searchFromInsta(cls):
     with open("watchlist.txt") as f:
         content = f.readlines()
     flaggedUsers = [x.strip() for x in content]
-
+    flaggedUsersChecked = []
     for userInfo in flaggedUsers:
         user,date = userInfo.split("   ")
         print("checking user: "+user, "since date: "+date)
         try:
             cls.download_post_since_date(user,date.split(","))
+            flaggedUsersChecked.append(user)
         except:
             print("error downloading posts for user: "+user)
-        # #check if there is my face in the pictures
-        # listOfFiles = []
-        # for filename in os.listdir("downloads"):
-        #     if filename.endswith(".jpg") or filename.endswith(".png"):
-        #         if checkImage("downloads/"+filename,myface):
-        #             print("found my face in "+filename)
-        #             listOfFiles.append("downloads/"+filename)
-        #     else:
-        #         continue
-        # print("found in total "+str(len(listOfFiles))+" pictures with my face in it")
-        # print(listOfFiles)
+    
+    #update watchlist date for today for all users checked
+    with open("watchlist.txt", "w") as f:
+        for user in flaggedUsers:
+            if user.split("   ")[0] in flaggedUsersChecked:
+                f.write(user.split("   ")[0]+"   "+getTodayDate()+"\n")
+            else:
+                f.write(user+"\n")
+
 
 def deleteUselessFiles(whitelist):
     print("deleting files not flagged...")
     print("whitelist",whitelist)
-    for filename in os.listdir("downloads"):
-        if filename not in whitelist:
-            #print("deleting "+filename)
-            os.remove("downloads/"+filename)
+    #list all folder in downloads
+
+    for folder in os.listdir("downloads"):
+        for filename in os.listdir("downloads/"+folder):
+            if filename not in whitelist:
+                #print("deleting "+filename)
+                os.remove("downloads/"+folder+"/"+filename)
 
 
 def analyze():
     #check if there is my face in the pictures
     listOfFiles = []
-    for filename in os.listdir("downloads"):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            if checkImage("downloads/"+filename,myface):
-                print("found my face in "+filename)
-                listOfFiles.append(filename)
-        else:
-            continue
+    listOfUsersFlagged=[]
+    for folder in os.listdir("downloads"):
+        for filename in os.listdir("downloads/"+folder):
+            if filename.endswith(".jpg") or filename.endswith(".png"):
+                if checkImage("downloads/"+folder+"/"+filename,myface):
+                    print("found my face in "+filename)
+                    listOfFiles.append(filename)
+                    if folder not in listOfUsersFlagged:
+                        listOfUsersFlagged.append(folder)
+            else:
+                continue
     print("found in total "+str(len(listOfFiles))+" pictures with my face in it")
-    return listOfFiles
+    return listOfFiles,listOfUsersFlagged
 
 def searchAndAnalyze(cls):
     print("----- Searching from instagram...")
     searchFromInsta(cls)
+    #TODO update watchlist date for today
     print("----- Analyzing...")
-    whitelist = analyze()
+    whitelist,usersFlagged = analyze()
     print("----- Deleting useless files...")
     deleteUselessFiles(whitelist)
+
+    print("----- Flagged users:")
+    with open("flaggedUsers.txt", "w") as f:
+        for user in usersFlagged:
+            f.write(user+"\n")
+            print(user)
+    print("exported in flaggedUsers.txt")
+
 
 def displayMenu():
     print("1. Login")
@@ -136,6 +145,7 @@ def login(cls):
 cls = GetInstagramProfile()
 exitApp = False
 login(cls)
+myface ="me.jpg"
 while (not exitApp):
     displayMenu()
     choice = input("Enter your choice: ")

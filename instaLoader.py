@@ -5,7 +5,7 @@ import csv
 
 class GetInstagramProfile():
     def __init__(self) -> None:
-        self.L = instaloader.Instaloader()
+        self.L = instaloader.Instaloader(dirname_pattern='downloads/{target}')
         self.currentAccount = ""
 
     def loginFromSession(self,sessionName):
@@ -45,7 +45,7 @@ class GetInstagramProfile():
         for followee in profile.get_followers():
             username = followee.username
             file.write(username + "\n")
-            print(username)
+            #print(username)
         file.close()
 
     def get_post_comments(self,username):
@@ -86,5 +86,5 @@ class GetInstagramProfile():
         UNTIL = datetime.now()
 
         for post in takewhile(lambda p: p.date > SINCE, dropwhile(lambda p: p.date > UNTIL, posts)):
-            self.L.download_post(post, "downloads")
+            self.L.download_post(post, username)
 
