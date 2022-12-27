@@ -67,14 +67,17 @@ def searchFromInsta(cls):
         content = f.readlines()
     flaggedUsers = [x.strip() for x in content]
     flaggedUsersChecked = []
+    i=1
+    nUsers = len(flaggedUsers)
     for userInfo in flaggedUsers:
         user,date = userInfo.split("   ")
-        print("checking user: "+user, "since date: "+date)
+        print(f"[{i}/{nUsers}] checking user: {user} since date: {date}")
         try:
             cls.download_post_since_date(user,date.split(","))
             flaggedUsersChecked.append(user)
         except:
             print("error downloading posts for user: "+user)
+        i+=1
     
     #update watchlist date for today for all users checked
     with open("watchlist.txt", "w") as f:
@@ -86,15 +89,18 @@ def searchFromInsta(cls):
 
 
 def deleteUselessFiles(whitelist):
-    print("deleting files not flagged...")
-    print("whitelist",whitelist)
-    #list all folder in downloads
+    print("deleting files not flagged and empty folders...")
+    print("files flagged: ",whitelist)
 
+    #list all folder in downloads
     for folder in os.listdir("downloads"):
         for filename in os.listdir("downloads/"+folder):
             if filename not in whitelist:
                 #print("deleting "+filename)
                 os.remove("downloads/"+folder+"/"+filename)
+        #if folder is empty, delete it
+        if len(os.listdir("downloads/"+folder))==0:
+            os.rmdir("downloads/"+folder)
 
 
 def analyze():
@@ -114,10 +120,7 @@ def analyze():
     print("found in total "+str(len(listOfFiles))+" pictures with my face in it")
     return listOfFiles,listOfUsersFlagged
 
-def searchAndAnalyze(cls):
-    print("----- Searching from instagram...")
-    searchFromInsta(cls)
-    #TODO update watchlist date for today
+def analyzeFlagAndClean():
     print("----- Analyzing...")
     whitelist,usersFlagged = analyze()
     print("----- Deleting useless files...")
@@ -131,14 +134,22 @@ def searchAndAnalyze(cls):
     print("exported in flaggedUsers.txt")
 
 
+def searchAndAnalyze(cls):
+    print("----- Searching from instagram...")
+    searchFromInsta(cls)
+    analyzeFlagAndClean()
+
+
 def displayMenu():
     print("1. Login")
     print("2. Update watchlist")
     print("3. Search and analyze")
-    print("4. Exit")
+    print("4. Search only")
+    print("5. Analyze only")
+    print("9. Exit")
 
 def login(cls):
-    account = updateSession() #input("Enter your account name: ")
+    account = updateSession()
     cls.loginFromSession(account)
 
 
@@ -156,6 +167,10 @@ while (not exitApp):
     elif choice == "3":
         searchAndAnalyze(cls)
     elif choice == "4":
+        searchFromInsta(cls)
+    elif choice == "5":
+        analyzeFlagAndClean()
+    elif choice == "9":
         exitApp = True
     
 
