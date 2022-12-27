@@ -3,7 +3,6 @@ from instaLoader import GetInstagramProfile
 from fixLogin import updateSession
 import os
 from datetime import date as dt
-import threading
 
 #get date in format yyyy,mm,dd
 def getTodayDate():
@@ -60,12 +59,6 @@ def updateWatchlist(cls):
                 f.write(user+"   "+getDateFromUser(user,flaggedUsers)+"\n")
             
 
-def search_from_insta_thread(cls, user, date):
-    try:
-        cls.download_post_since_date(user, date.split(","))
-    except:
-        print("error downloading posts for user: "+user)
-
 def searchFromInsta(cls):
     #open watchlist and store profile to check in a list
     print("Searching and analyzing...")
@@ -74,17 +67,14 @@ def searchFromInsta(cls):
         content = f.readlines()
     flaggedUsers = [x.strip() for x in content]
     flaggedUsersChecked = []
-    
-    threads = []
     for userInfo in flaggedUsers:
-        user, date = userInfo.split("   ")
+        user,date = userInfo.split("   ")
         print("checking user: "+user, "since date: "+date)
-        t = threading.Thread(target=search_from_insta_thread, args=(cls, user, date))
-        threads.append(t)
-        t.start()
-    for t in threads:
-        t.join()
-        flaggedUsersChecked.append(user)
+        try:
+            cls.download_post_since_date(user,date.split(","))
+            flaggedUsersChecked.append(user)
+        except:
+            print("error downloading posts for user: "+user)
     
     #update watchlist date for today for all users checked
     with open("watchlist.txt", "w") as f:
